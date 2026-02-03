@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: DatabaseMonastero
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python bot.py"
-    runtime: "python-3.11.9"
