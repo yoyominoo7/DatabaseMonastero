@@ -460,7 +460,7 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
 
 # ---------- main / webhook ----------
 
-async def main() -> None:
+def main() -> None:
     ensure_tables()
 
     application = (
@@ -501,22 +501,14 @@ async def main() -> None:
         )
     )
 
-    # --- WEBHOOK CORRETTO PER PTB 21.x ---
-    await application.initialize()
-    await application.start()
-
-    await application.bot.set_webhook(url=WEBHOOK_URL)
-
-    await application.updater.start_webhook(
+    # --- WEBHOOK CORRETTO ---
+    application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         url_path=BOT_TOKEN,
-        webhook_url=WEBHOOK_URL,
+        webhook_url=f"https://databasemonastero.onrender.com/{BOT_TOKEN}",
     )
-
-    await application.updater.idle()
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
