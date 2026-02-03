@@ -469,10 +469,9 @@ async def main() -> None:
         .build()
     )
 
-    # /start
+    # Handlers
     application.add_handler(CommandHandler("start", start))
 
-    # /generacodice conversation
     gen_conv = ConversationHandler(
         entry_points=[CommandHandler("generacodice", generacodice_entry)],
         states={
@@ -485,7 +484,6 @@ async def main() -> None:
     application.add_handler(gen_conv)
     application.add_handler(CallbackQueryHandler(generacodice_callback, pattern="^gen_"))
 
-    # /controllacodice conversation
     check_conv = ConversationHandler(
         entry_points=[CommandHandler("controllacodice", controllacodice_entry)],
         states={
@@ -503,20 +501,20 @@ async def main() -> None:
         )
     )
 
-    # --- WEBHOOK CORRETTO PER RENDER ---
+    # --- WEBHOOK CORRETTO PER PTB 21.x ---
     await application.initialize()
     await application.start()
 
-    # Imposta il webhook
     await application.bot.set_webhook(url=WEBHOOK_URL)
 
-    # Avvia il server webhook
-    await application.run_webhook(
+    await application.updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path=BOT_TOKEN,   # IMPORTANTISSIMO: NON vuoto
+        url_path=BOT_TOKEN,
         webhook_url=WEBHOOK_URL,
     )
+
+    await application.updater.idle()
 
 
 if __name__ == "__main__":
