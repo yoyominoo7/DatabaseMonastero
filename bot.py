@@ -503,17 +503,22 @@ async def main() -> None:
         )
     )
 
-    # Webhook
+    # --- WEBHOOK CORRETTO PER RENDER ---
     await application.initialize()
     await application.start()
+
+    # Imposta il webhook
     await application.bot.set_webhook(url=WEBHOOK_URL)
+
+    # Avvia il server webhook
     await application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path="",  # WEBHOOK_URL già completo
+        url_path=BOT_TOKEN,   # IMPORTANTISSIMO: NON vuoto
+        webhook_url=WEBHOOK_URL,
     )
 
 
 if __name__ == "__main__":
-    import asyncio 
-    asyncio.get_event_loop().run_until_complete(main())
+    import asyncio
+    asyncio.run(main())
