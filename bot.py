@@ -459,31 +459,30 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
 
 async def modulomensa_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("Inserisci il nickname del fedele:")
-    context.user_data["mod_mensa_msg"] = msg  # messaggio da modificare
+    context.user_data["mensa_msg"] = msg
     return MOD_MENSA_NICK
 
 async def modulomensa_get_nick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nick = update.message.text.strip()
-    context.user_data["mod_mensa_nick"] = nick
+    context.user_data["mensa_nick"] = nick
 
-    # elimina messaggio utente
     await update.message.delete()
 
-    # modifica messaggio bot
-    msg = context.user_data["mod_mensa_msg"]
+    msg = context.user_data["mensa_msg"]
     await msg.edit_text("Inserisci la quantità di cibo distribuita:")
 
     return MOD_MENSA_QTY
 
+
 async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE):
     qty = update.message.text.strip()
-    context.user_data["mod_mensa_qty"] = qty
+    context.user_data["mensa_qty"] = qty
 
     await update.message.delete()
 
-    nick = context.user_data["mod_mensa_nick"]
+    nick = context.user_data["mensa_nick"]
+    msg = context.user_data["mensa_msg"]
 
-    msg = context.user_data["mod_mensa_msg"]
     await msg.edit_text(
         f"**Riepilogo modulo mensa:**\n"
         f"- Fedele: `{nick}`\n"
@@ -497,7 +496,6 @@ async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
     return MOD_MENSA_CONFIRM
-
 async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -507,13 +505,11 @@ async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
     if query.data == "mensa_confirm":
-        nick = context.user_data["mod_mensa_nick"]
-        qty = context.user_data["mod_mensa_qty"]
+        nick = context.user_data["mensa_nick"]
+        qty = context.user_data["mensa_qty"]
 
-        # salva nel database
         save_mensa_record(nick, qty)
 
-        # invia nel gruppo direzione
         await context.bot.send_message(
             chat_id=ID_GRUPPO_DIREZIONE,
             text=(
@@ -599,6 +595,7 @@ def main() -> None:
         fallbacks=[],
     )
     application.add_handler(mensa_conv)
+
 
     # --- WEBHOOK ---
     application.run_webhook(
