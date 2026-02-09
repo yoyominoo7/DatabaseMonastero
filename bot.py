@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Conversation states
 GEN_GET_NICK = 1
 CHECK_GET_CODE = 2
-
+MOD_MENSA_NICK, MOD_MENSA_QTY, MOD_MENSA_CONFIRM = range(300, 303)
 # Env vars
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 WEBHOOK_URL = os.environ["WEBHOOK_URL"]
@@ -457,6 +457,87 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
 
         context.user_data.pop("check_code", None)
 
+async def modulomensa_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = await update.message.reply_text("Inserisci il nickname del fedele:")
+    context.user_data["mod_mensa_msg"] = msg  # messaggio da modificare
+    return MOD_MENSA_NICK
+
+async def modulomensa_get_nick(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    nick = update.message.text.strip()
+    context.user_data["mod_mensa_nick"] = nick
+
+    # elimina messaggio utente
+    await update.message.delete()
+
+    # modifica messaggio bot
+    msg = context.user_data["mod_mensa_msg"]
+    await msg.edit_text("Inserisci la quantità di cibo distribuita:")
+
+    return MOD_MENSA_QTY
+
+async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    qty = update.message.text.strip()
+    context.user_data["mod_mensa_qty"] = qty
+
+    await update.message.delete()
+
+    nick = context.user_data["mod_mensa_nick"]
+
+    msg = context.user_data["mod_mensa_msg"]
+    await msg.edit_text(
+        f"**Riepilogo modulo mensa:**\n"
+        f"- Fedele: `{nick}`\n"
+        f"- Quantità: `{qty}`\n\n"
+        "Confermi la registrazione?",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Conferma", callback_data="mensa_confirm")],
+            [InlineKeyboardButton("Annulla", callback_data="mensa_cancel")]
+        ])
+    )
+
+    return MOD_MENSA_CONFIRM
+
+async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "mensa_cancel":
+        await query.edit_message_text("Registrazione annullata.")
+        return ConversationHandler.END
+
+    if query.data == "mensa_confirm":
+        nick = context.user_data["mod_mensa_nick"]
+        qty = context.user_data["mod_mensa_qty"]
+
+        # salva nel database
+        save_mensa_record(nick, qty)
+
+        # invia nel gruppo direzione
+        await context.bot.send_message(
+            chat_id=ID_GRUPPO_DIREZIONE,
+            text=(
+                "📜 *Nuova registrazione mensa*\n"
+                f"- Fedele: `{nick}`\n"
+                f"- Quantità: `{qty}`\n"
+                f"- Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            ),
+            parse_mode="Markdown"
+        )
+
+        await query.edit_message_text("Modulo mensa registrato con successo.")
+        return ConversationHandler.END
+
+def save_mensa_record(nick, qty):
+    conn = psycopg.connect(DB_URL)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO mensa (nickname, quantita, data) VALUES (%s, %s, NOW())",
+        (nick, qty)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
 
 # ---------- main / webhook ----------
 
@@ -500,6 +581,22 @@ def main() -> None:
             pattern="^(check_close|extinguish:|extinguish_confirm:)"
         )
     )
+    mensa_conv = ConversationHandler(
+        entry_points=[CommandHandler("modulomensa", modulomensa_entry)],
+        states={
+            MOD_MENSA_NICK: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, modulomensa_get_nick)
+            ],
+            MOD_MENSA_QTY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, modulomensa_get_qty)
+            ],
+            MOD_MENSA_CONFIRM: [
+                CallbackQueryHandler(modulomensa_callback, pattern="^mensa_")
+            ],
+        },
+    fallbacks=[],
+    )
+application.add_handler(mensa_conv)
 
     # --- WEBHOOK CORRETTO ---
     application.run_webhook(
