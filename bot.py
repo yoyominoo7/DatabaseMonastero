@@ -581,6 +581,8 @@ def main() -> None:
             pattern="^(check_close|extinguish:|extinguish_confirm:)"
         )
     )
+
+    # --- MODULO MENSA ---
     mensa_conv = ConversationHandler(
         entry_points=[CommandHandler("modulomensa", modulomensa_entry)],
         states={
@@ -594,11 +596,11 @@ def main() -> None:
                 CallbackQueryHandler(modulomensa_callback, pattern="^mensa_")
             ],
         },
-    fallbacks=[],
+        fallbacks=[],
     )
-application.add_handler(mensa_conv)
+    application.add_handler(mensa_conv)
 
-    # --- WEBHOOK CORRETTO ---
+    # --- WEBHOOK ---
     application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
