@@ -458,6 +458,11 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
         context.user_data.pop("check_code", None)
 
 async def modulomensa_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Salviamo chi sta compilando il modulo
+    user = update.effective_user
+    context.user_data["mensa_registratore_id"] = user.id
+    context.user_data["mensa_registratore_username"] = user.username or "Nessun username"
+
     msg = await update.message.reply_text("Inserisci il nickname del fedele:")
     context.user_data["mensa_msg"] = msg
     return MOD_MENSA_NICK
@@ -472,8 +477,6 @@ async def modulomensa_get_nick(update: Update, context: ContextTypes.DEFAULT_TYP
     await msg.edit_text("Inserisci la quantità di cibo distribuita:")
 
     return MOD_MENSA_QTY
-
-
 async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE):
     qty = update.message.text.strip()
     context.user_data["mensa_qty"] = qty
@@ -486,7 +489,8 @@ async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE
     await msg.edit_text(
         f"**Riepilogo modulo mensa:**\n"
         f"- Fedele: `{nick}`\n"
-        f"- Quantità: `{qty}`\n\n"
+        f"- Quantità: `{qty}`\n"
+        f"- Registrato da: @{context.user_data['mensa_registratore_username']}\n\n"
         "Confermi la registrazione?",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([
@@ -496,6 +500,7 @@ async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
     return MOD_MENSA_CONFIRM
+
 async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -507,15 +512,20 @@ async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     if query.data == "mensa_confirm":
         nick = context.user_data["mensa_nick"]
         qty = context.user_data["mensa_qty"]
+        registratore_id = context.user_data["mensa_registratore_id"]
+        registratore_username = context.user_data["mensa_registratore_username"]
 
-        save_mensa_record(nick, qty)
+        # Salvataggio nel DB
+        save_mensa_record(nick, qty, registratore_id, registratore_username)
 
+        # Invio nel gruppo direzione
         await context.bot.send_message(
-            chat_id=ID_GRUPPO_DIREZIONE,
+            chat_id=DIRECTION_CHAT_ID,
             text=(
                 "📜 *Nuova registrazione mensa*\n"
                 f"- Fedele: `{nick}`\n"
                 f"- Quantità: `{qty}`\n"
+                f"- Registrato da: @{registratore_username} (ID: {registratore_id})\n"
                 f"- Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
             ),
             parse_mode="Markdown"
@@ -524,16 +534,20 @@ async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text("Modulo mensa registrato con successo.")
         return ConversationHandler.END
 
-def save_mensa_record(nick, qty):
+def save_mensa_record(nick, qty, registratore_id, registratore_username):
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO mensa (nickname, quantita, data) VALUES (%s, %s, NOW())",
-        (nick, qty)
+        """
+        INSERT INTO mensa (nickname, quantita, registratore_id, registratore_username, data)
+        VALUES (%s, %s, %s, %s, NOW())
+        """,
+        (nick, qty, registratore_id, registratore_username)
     )
     conn.commit()
     cur.close()
     conn.close()
+
 
 # ---------- main / webhook ----------
 
