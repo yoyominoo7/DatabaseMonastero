@@ -4,7 +4,7 @@ import os
 import random
 from typing import Optional, Tuple, List
 from datetime import datetime
-
+import html
 import psycopg
 from psycopg.rows import dict_row
 from telegram import (
@@ -148,19 +148,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if role == "hermit":
         await update.message.reply_text(
-            "Benvenuto, eremita.\n\n"
-            "Puoi usare:\n"
-            "/generacodice – genera un nuovo codice per un player\n"
-            "/controllacodice – controlla o estingui un codice esistente"
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "🌊 Benvenuto, eremita.\n"
+            "La tua presenza è riconosciuta dal Monastero.\n\n"
+            "Puoi utilizzare i seguenti strumenti sacri:\n"
+            "• /generacodice – <i>Genera un nuovo codice per un fedele</i>\n"
+            "• /controllacodice – <i>Controlla o estingui un codice esistente</i>"
+            "• /modulomensa –<i>Inizia la registrazione di un modulo mensa</i>",
+            parse_mode="HTML"
         )
+
     elif role == "initiate":
         await update.message.reply_text(
-            "Benvenuto, iniziato.\n\n"
-            "Per ora non hai comandi disponibili, ma sei parte del monastero."
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "🌊 Benvenuto, iniziato.\n"
+            "Il Monastero riconosce la tua appartenenza.\n\n"
+            "Al momento non hai comandi disponibili, ma la tua presenza è preziosa.",
+            parse_mode="HTML"
         )
+
     else:
         await update.message.reply_text(
-            "Non sei autorizzato a utilizzare questo bot."
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "⛔ Non sei autorizzato a utilizzare questo bot.",
+            parse_mode="HTML"
         )
 
 
@@ -178,8 +189,10 @@ async def generacodice_entry(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data["gen_messages_to_delete"] = []
 
     msg = await update.message.reply_text(
-        f"Ho generato il codice: {code}\n\n"
-        "Ora inviami il nickname del player a cui intestarlo."
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        f"🔱 Ho generato il codice sacro: <b>{code}</b>\n\n"
+        "Ora inviami il <b>nickname del fedele</b> a cui deve essere assegnato.",
+        parse_mode="HTML"
     )
     context.user_data["gen_messages_to_delete"].append(msg.message_id)
     context.user_data["gen_messages_to_delete"].append(update.message.message_id)
@@ -190,14 +203,23 @@ async def generacodice_entry(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def generacodice_get_nick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     role = get_role(update.effective_user.id)
     if role != "hermit":
-        await update.message.reply_text("Non sei autorizzato.")
+        await update.message.reply_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "⛔ Non sei autorizzato a compiere questo rito.",
+            parse_mode="HTML"
+        )
         return ConversationHandler.END
 
     nick = update.message.text.strip()
     code = context.user_data.get("gen_code")
 
     if not code:
-        await update.message.reply_text("Qualcosa è andato storto, riprova /generacodice.")
+        await update.message.reply_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "⚠️ Qualcosa è andato storto.\n"
+            "Riprova il rito con /generacodice.",
+            parse_mode="HTML"
+        )
         return ConversationHandler.END
 
     context.user_data["gen_owner"] = nick
@@ -213,11 +235,14 @@ async def generacodice_get_nick(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Invia resoconto con bottoni
     text = (
-        "Riepilogo generazione codice:\n\n"
-        f"ID: (verrà assegnato alla conferma)\n"
-        f"Player: {nick}\n"
-        f"Codice: {code}\n"
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        "📋 <b>Riepilogo generazione codice</b>\n\n"
+        "Controlla le informazioni prima di procedere:\n\n"
+        f"• 🆔 ID: <i>verrà assegnato alla conferma</i>\n"
+        f"• 👤 Player: <b>{nick}</b>\n"
+        f"• 🔐 Codice: <b>{code}</b>"
     )
+
     keyboard = InlineKeyboardMarkup(
         [
             [
@@ -226,7 +251,8 @@ async def generacodice_get_nick(update: Update, context: ContextTypes.DEFAULT_TY
             ]
         ]
     )
-    msg = await update.effective_chat.send_message(text, reply_markup=keyboard)
+
+    msg = await update.effective_chat.send_message(text, reply_markup=keyboard, parse_mode="HTML")
     context.user_data["gen_summary_message_id"] = msg.message_id
 
     return ConversationHandler.END
@@ -239,7 +265,11 @@ async def generacodice_callback(update: Update, context: ContextTypes.DEFAULT_TY
     user = query.from_user
     role = get_role(user.id)
     if role != "hermit":
-        await query.edit_message_text("Non sei autorizzato.")
+        await query.edit_message_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "⛔ Non sei autorizzato.",
+            parse_mode="HTML"
+        )
         return
 
     data = query.data
@@ -247,21 +277,33 @@ async def generacodice_callback(update: Update, context: ContextTypes.DEFAULT_TY
     owner = context.user_data.get("gen_owner")
 
     if data == "gen_cancel":
-        await query.edit_message_text("Richiesta annullata.")
+        await query.edit_message_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "❌ Richiesta annullata.",
+            parse_mode="HTML"
+        )
         context.user_data.pop("gen_code", None)
         context.user_data.pop("gen_owner", None)
         return
 
     if data == "gen_confirm":
         if not code or not owner:
-            await query.edit_message_text("Dati mancanti, riprova /generacodice.")
+            await query.edit_message_text(
+                "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+                "⚠️ Dati mancanti.\n"
+                "Riprova il rito con /generacodice.",
+                parse_mode="HTML"
+            )
             return
 
         # Salva su DB (controllando ancora unicità)
         existing = await asyncio.to_thread(db_get_code, code)
         if existing is not None:
             await query.edit_message_text(
-                "Il codice generato esiste già. Riprova /generacodice."
+                "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+                "⚠️ Il codice generato esiste già.\n"
+                "Riprova il rito con /generacodice.",
+                parse_mode="HTML"
             )
             context.user_data.pop("gen_code", None)
             context.user_data.pop("gen_owner", None)
@@ -271,32 +313,39 @@ async def generacodice_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
         # Messaggio finale all'eremita
         text = (
-            "Codice creato con successo!\n\n"
-            f"ID: {row['id']}\n"
-            f"Player: {row['owner']}\n"
-            f"Codice: {row['code']}\n"
-            f"Creato alle: {row['created_at']}\n"
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "✅ <b>Codice creato con successo!</b>\n\n"
+            "Ecco i dettagli del codice sacro:\n\n"
+            f"• 🆔 ID: <b>{row['id']}</b>\n"
+            f"• 👤 Player: <b>{row['owner']}</b>\n"
+            f"• 🔐 Codice: <b>{row['code']}</b>\n"
+            f"• 🕰️ Creato alle: <b>{row['created_at']}</b>"
         )
-        await query.edit_message_text(text)
+        await query.edit_message_text(text, parse_mode="HTML")
 
         # Notifica al gruppo direzione
         dir_text = (
-            "📜 Nuovo codice generato\n\n"
-            f"ID: {row['id']}\n"
-            f"Player: {row['owner']}\n"
-            f"Codice: {row['code']}\n"
-            f"Creato da: {user.full_name} (id {user.id})\n"
-            f"Orario: {row['created_at']}\n"
+            "<b>📜 NUOVO CODICE GENERATO</b>\n\n"
+            f"• 🆔 ID: <b>{row['id']}</b>\n"
+            f"• 👤 Player: <b>{row['owner']}</b>\n"
+            f"• 🔐 Codice: <b>{row['code']}</b>\n"
+            f"• 🧙‍♂️ Creato da: <b>{user.full_name}</b> (ID {user.id})\n"
+            f"• 🕰️ Orario: <b>{row['created_at']}</b>"
         )
+
         try:
-            await context.bot.send_message(chat_id=DIRECTION_CHAT_ID, text=dir_text)
+            await context.bot.send_message(
+                chat_id=DIRECTION_CHAT_ID,
+                text=dir_text,
+                message_thread_id=299,
+                parse_mode="HTML"
+            )
         except Exception as e:
             logger.error("Errore invio messaggio direzione: %s", e)
 
         # Pulisci dati temporanei
         context.user_data.pop("gen_code", None)
         context.user_data.pop("gen_owner", None)
-
 
 # ---------- /controllacodice ----------
 
@@ -306,7 +355,9 @@ async def controllacodice_entry(update: Update, context: ContextTypes.DEFAULT_TY
         return ConversationHandler.END
 
     msg = await update.message.reply_text(
-        "Inserisci il codice (4 cifre) da verificare."
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        "🔍 Inserisci il <b>codice sacro</b> (4 cifre) che desideri verificare.",
+        parse_mode="HTML"
     )
     context.user_data["check_prompt_message_id"] = msg.message_id
     context.user_data["check_user_command_message_id"] = update.message.message_id
@@ -317,7 +368,11 @@ async def controllacodice_get_code(update: Update, context: ContextTypes.DEFAULT
     user = update.effective_user
     role = get_role(user.id)
     if role != "hermit":
-        await update.message.reply_text("Non sei autorizzato.")
+        await update.message.reply_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "⛔ Non sei autorizzato a compiere questo rito.",
+            parse_mode="HTML"
+        )
         return ConversationHandler.END
 
     code = update.message.text.strip()
@@ -333,11 +388,14 @@ async def controllacodice_get_code(update: Update, context: ContextTypes.DEFAULT
     row = await asyncio.to_thread(db_get_code, code)
 
     if row is None:
-        text = f"Codice {code} non trovato o non attivo."
+        text = (
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            f"❌ Il codice <b>{code}</b> non è stato trovato o non è più attivo."
+        )
         keyboard = InlineKeyboardMarkup(
             [[InlineKeyboardButton("Chiudi", callback_data="check_close")]]
         )
-        # Modifica l'ultimo messaggio del bot
+
         prompt_id = context.user_data.get("check_prompt_message_id")
         if prompt_id:
             await context.bot.edit_message_text(
@@ -345,18 +403,21 @@ async def controllacodice_get_code(update: Update, context: ContextTypes.DEFAULT
                 message_id=prompt_id,
                 text=text,
                 reply_markup=keyboard,
+                parse_mode="HTML"
             )
         else:
-            await update.effective_chat.send_message(text, reply_markup=keyboard)
+            await update.effective_chat.send_message(text, reply_markup=keyboard, parse_mode="HTML")
         return ConversationHandler.END
 
-    status = "ATTIVO" if row["active"] else "ESTINTO"
+    status = "🟢 <b>ATTIVO</b>" if row["active"] else "🔴 <b>ESTINTO</b>"
+
     text = (
-        f"Dettagli codice {code}:\n\n"
-        f"ID: {row['id']}\n"
-        f"Player: {row['owner']}\n"
-        f"Creato alle: {row['created_at']}\n"
-        f"Stato: {status}\n"
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        f"📜 <b>Dettagli del codice {code}</b>\n\n"
+        f"• 🆔 ID: <b>{row['id']}</b>\n"
+        f"• 👤 Player: <b>{row['owner']}</b>\n"
+        f"• 🕰️ Creato alle: <b>{row['created_at']}</b>\n"
+        f"• 🔒 Stato: {status}"
     )
 
     if row["active"]:
@@ -366,7 +427,7 @@ async def controllacodice_get_code(update: Update, context: ContextTypes.DEFAULT
                     InlineKeyboardButton(
                         "🔥 Estingui codice", callback_data=f"extinguish:{code}"
                     ),
-                    InlineKeyboardButton("Annulla", callback_data="check_close"),
+                    InlineKeyboardButton("❌ Annulla", callback_data="check_close"),
                 ]
             ]
         )
@@ -382,9 +443,10 @@ async def controllacodice_get_code(update: Update, context: ContextTypes.DEFAULT
             message_id=prompt_id,
             text=text,
             reply_markup=keyboard,
+            parse_mode="HTML"
         )
     else:
-        msg = await update.effective_chat.send_message(text, reply_markup=keyboard)
+        msg = await update.effective_chat.send_message(text, reply_markup=keyboard, parse_mode="HTML")
         context.user_data["check_prompt_message_id"] = msg.message_id
 
     context.user_data["check_code"] = code
@@ -398,20 +460,32 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
     user = query.from_user
     role = get_role(user.id)
     if role != "hermit":
-        await query.edit_message_text("Non sei autorizzato.")
+        await query.edit_message_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "⛔ Non sei autorizzato.",
+            parse_mode="HTML"
+        )
         return
 
     data = query.data
 
     if data == "check_close":
-        await query.edit_message_text("Operazione conclusa.")
+        await query.edit_message_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "🔚 Operazione conclusa.",
+            parse_mode="HTML"
+        )
         context.user_data.pop("check_code", None)
         return
 
     if data.startswith("extinguish:"):
         code = data.split(":", 1)[1]
-        # Chiedi conferma
-        text = f"Sei sicuro di voler estinguere il codice {code}?"
+
+        text = (
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            f"🔥 Sei sicuro di voler <b>estingue­re</b> il codice <b>{code}</b>?"
+        )
+
         keyboard = InlineKeyboardMarkup(
             [
                 [
@@ -422,51 +496,73 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
                 ]
             ]
         )
-        await query.edit_message_text(text, reply_markup=keyboard)
+
+        await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
         return
 
     if data.startswith("extinguish_confirm:"):
         code = data.split(":", 1)[1]
         row = await asyncio.to_thread(db_extinguish_code, code)
+
         if row is None:
             await query.edit_message_text(
-                f"Il codice {code} non è attivo o non esiste più."
+                "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+                f"⚠️ Il codice <b>{code}</b> non è attivo o non esiste più.",
+                parse_mode="HTML"
             )
             return
 
         text = (
-            f"Codice {code} estinto con successo.\n\n"
-            f"ID: {row['id']}\n"
-            f"Player: {row['owner']}\n"
-            f"Creato alle: {row['created_at']}\n"
-            f"Stato: ESTINTO\n"
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            f"🔥 <b>Codice {code} estinto con successo.</b>\n\n"
+            f"• 🆔 ID: <b>{row['id']}</b>\n"
+            f"• 👤 Player: <b>{row['owner']}</b>\n"
+            f"• 🕰️ Creato alle: <b>{row['created_at']}</b>\n"
+            f"• 🔒 Stato: <b>ESTINTO</b>"
         )
-        await query.edit_message_text(text)
+
+        await query.edit_message_text(text, parse_mode="HTML")
 
         # Notifica al gruppo direzione
         dir_text = (
-            "⚠️ Codice estinto\n\n"
-            f"ID: {row['id']}\n"
-            f"Player: {row['owner']}\n"
-            f"Codice: {row['code']}\n"
-            f"Estinto da: {user.full_name} (id {user.id})\n"
+            "<b>⚠️ CODICE ESTINTO</b>\n\n"
+            f"• 🆔 ID: <b>{row['id']}</b>\n"
+            f"• 👤 Player: <b>{row['owner']}</b>\n"
+            f"• 🔐 Codice: <b>{row['code']}</b>\n"
+            f"• 🧙‍♂️ Estinto da: <b>{user.full_name}</b> (ID {user.id})"
         )
+
         try:
-            await context.bot.send_message(chat_id=DIRECTION_CHAT_ID, text=dir_text)
+            await context.bot.send_message(
+                chat_id=DIRECTION_CHAT_ID,
+                text=dir_text,
+                message_thread_id=299,
+                parse_mode="HTML"
+            )
         except Exception as e:
             logger.error("Errore invio messaggio direzione: %s", e)
 
         context.user_data.pop("check_code", None)
 
+
 async def modulomensa_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Salviamo chi sta compilando il modulo
     user = update.effective_user
     context.user_data["mensa_registratore_id"] = user.id
-    context.user_data["mensa_registratore_username"] = user.username or "Nessun username"
+    context.user_data["mensa_registratore_username"] = user.username or "Nessun_username"
 
-    msg = await update.message.reply_text("Inserisci il nickname del fedele:")
+    msg = await update.message.reply_text(
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        "📝 Per iniziare la registrazione del modulo mensa, inserisci il <b>nickname del fedele</b> "
+        "a cui è stato consegnato il cibo.\n\n"
+        "Assicurati che il nome sia corretto prima di procedere.",
+        parse_mode="HTML"
+    )
+
     context.user_data["mensa_msg"] = msg
     return MOD_MENSA_NICK
+
+
 
 async def modulomensa_get_nick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nick = update.message.text.strip()
@@ -475,9 +571,17 @@ async def modulomensa_get_nick(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.message.delete()
 
     msg = context.user_data["mensa_msg"]
-    await msg.edit_text("Inserisci la quantità di cibo distribuita:")
+    await msg.edit_text(
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        "🍽️ Inserisci ora la <b>quantità di cibo</b> distribuita al fedele.\n\n"
+        "Puoi indicare porzioni, sacchetti o una descrizione breve.",
+        parse_mode="HTML"
+    )
 
     return MOD_MENSA_QTY
+
+
+
 async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE):
     qty = update.message.text.strip()
     context.user_data["mensa_qty"] = qty
@@ -485,29 +589,39 @@ async def modulomensa_get_qty(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.delete()
 
     nick = context.user_data["mensa_nick"]
+    registratore = context.user_data["mensa_registratore_username"]
     msg = context.user_data["mensa_msg"]
 
     await msg.edit_text(
-        f"**Riepilogo modulo mensa:**\n"
-        f"- Fedele: `{nick}`\n"
-        f"- Quantità: `{qty}`\n"
-        f"- Registrato da: @{context.user_data['mensa_registratore_username']}\n\n"
-        "Confermi la registrazione?",
-        parse_mode="Markdown",
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        "📋 Sei arrivato alla fine della registrazione.\n\n"
+        "Qui sotto trovi il <i>resoconto</i> delle informazioni inserite. "
+        "Controlla che siano corrette e conferma il modulo:\n\n"
+        f"• 👤 Fedele: <b>{nick}</b>\n"
+        f"• 🍽️ Quantità: <b>{qty}</b>\n"
+        f"• 🧙‍♂️ Registrato da: <b>@{registratore}</b>\n\n"
+        "Vuoi confermare la registrazione?",
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Conferma", callback_data="mensa_confirm")],
-            [InlineKeyboardButton("Annulla", callback_data="mensa_cancel")]
+            [InlineKeyboardButton("✅ Conferma", callback_data="mensa_confirm")],
+            [InlineKeyboardButton("❌ Annulla", callback_data="mensa_cancel")]
         ])
     )
 
     return MOD_MENSA_CONFIRM
+
+
 
 async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     if query.data == "mensa_cancel":
-        await query.edit_message_text("Registrazione annullata.")
+        await query.edit_message_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "❌ Registrazione annullata.",
+            parse_mode="HTML"
+        )
         return ConversationHandler.END
 
     if query.data == "mensa_confirm":
@@ -523,17 +637,25 @@ async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await context.bot.send_message(
             chat_id=DIRECTION_CHAT_ID,
             text=(
-                "📜 *Nuova registrazione mensa*\n"
-                f"- Fedele: `{nick}`\n"
-                f"- Quantità: `{qty}`\n"
-                f"- Registrato da: @{registratore_username} (ID: {registratore_id})\n"
-                f"- Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                "<b>📜 NUOVA REGISTRAZIONE MENSA</b>\n\n"
+                f"• 👤 Fedele: <b>{nick}</b>\n"
+                f"• 🍽️ Quantità: <b>{qty}</b>\n"
+                f"• 🧙‍♂️ Registrato da: <b>@{registratore_username}</b> (ID: {registratore_id})\n"
+                f"• 🕰️ Data: <b>{datetime.now().strftime('%d/%m/%Y %H:%M')}</b>"
             ),
-            parse_mode="Markdown"
+            parse_mode="HTML",
+            message_thread_id=297
         )
 
-        await query.edit_message_text("Modulo mensa registrato con successo.")
+        await query.edit_message_text(
+            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "✅ Modulo mensa registrato con successo.",
+            parse_mode="HTML"
+        )
+
         return ConversationHandler.END
+
+
 
 def save_mensa_record(nick, qty, registratore_id, registratore_username):
     conn = psycopg.connect(DATABASE_URL)
