@@ -3,6 +3,7 @@ import logging
 import os
 import random
 from typing import Optional, Tuple, List
+from datetime import datetime
 
 import psycopg
 from psycopg.rows import dict_row
