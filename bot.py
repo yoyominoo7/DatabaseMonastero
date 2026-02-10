@@ -525,7 +525,7 @@ async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
 def save_mensa_record(nick, qty):
-    conn = psycopg.connect(DB_URL)
+    conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO mensa (nickname, quantita, data) VALUES (%s, %s, NOW())",
