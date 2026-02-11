@@ -148,22 +148,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if role == "hermit":
         await update.message.reply_text(
-            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄 ⚓️\n\n"
             "🌊 Benvenuto, eremita.\n"
-            "La tua presenza è riconosciuta dal Monastero.\n\n"
-            "Puoi utilizzare i seguenti strumenti sacri:\n"
+            "Questa breve guida ti aiuterà nelle tue mansioni all'interno del monastero! Qui sotto sono reportati i comandi a cui hai accesso.\n\n"
             "• /generacodice – <i>Genera un nuovo codice per un fedele</i>\n"
             "• /controllacodice – <i>Controlla o estingui un codice esistente</i>"
-            "• /modulomensa –<i>Inizia la registrazione di un modulo mensa</i>",
+            "• /modulomensa –<i>Inizia la registrazione di un modulo mensa</i>\n\n"
+            "Inoltre, per aiutarti in tutte le tue mansioni, qui sotto troverai il link per accedere alla guida dell'eremita.\n»https://telegra.ph/Guida-per-gli-Eremiti-02-02",
             parse_mode="HTML"
         )
 
     elif role == "initiate":
         await update.message.reply_text(
-            "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+            "𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄 ⚓️\n\n"
             "🌊 Benvenuto, iniziato.\n"
             "Il Monastero riconosce la tua appartenenza.\n\n"
-            "Al momento non hai comandi disponibili, ma la tua presenza è preziosa.",
+            "Questa breve guida ti aiuterà nelle tue mansioni all'interno del monastero! Qui sotto sono reportati i comandi a cui hai accesso.\n\n"
+            "• /generacodice – <i>Genera un nuovo codice per un fedele</i>\n"
+            "• /controllacodice – <i>Controlla o estingui un codice esistente</i>"
+            "• /modulomensa –<i>Inizia la registrazione di un modulo mensa</i>\n\nPer qualsiasi dubbio rivolgiti alla direzione del Monastero.",
             parse_mode="HTML"
         )
 
@@ -178,6 +181,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # ---------- /generacodice ----------
 
 async def generacodice_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
     role = await ensure_authorized(update, context)
     if role != "hermit":
         return ConversationHandler.END
@@ -350,6 +355,8 @@ async def generacodice_callback(update: Update, context: ContextTypes.DEFAULT_TY
 # ---------- /controllacodice ----------
 
 async def controllacodice_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
     role = await ensure_authorized(update, context)
     if role != "hermit":
         return ConversationHandler.END
@@ -546,6 +553,8 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
 
 
 async def modulomensa_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
     # Salviamo chi sta compilando il modulo
     user = update.effective_user
     context.user_data["mensa_registratore_id"] = user.id
@@ -671,6 +680,57 @@ def save_mensa_record(nick, qty, registratore_id, registratore_username):
     cur.close()
     conn.close()
 
+def get_weekly_mensa_report():
+    conn = psycopg.connect(DATABASE_URL)
+    cur = conn.cursor()
+
+    # Calcola l'intervallo della settimana precedente
+    cur.execute("""
+        SELECT 
+            date_trunc('week', NOW() - interval '1 week')::date AS start_date,
+            (date_trunc('week', NOW()) - interval '1 day')::date AS end_date
+    """)
+    start_date, end_date = cur.fetchone()
+
+    # Conteggio per registratore
+    cur.execute("""
+        SELECT registratore_username, COUNT(*)
+        FROM mensa
+        WHERE data::date BETWEEN %s AND %s
+        GROUP BY registratore_username
+        ORDER BY COUNT(*) DESC
+    """, (start_date, end_date))
+    rows = cur.fetchall()
+
+    conn.close()
+    return start_date, end_date, rows
+def format_weekly_report(start_date, end_date, rows):
+    report = (
+        "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
+        "📊 <b>Report settimanale</b>\n"
+        f"🗓 Periodo: <b>{start_date}</b> ➝ <b>{end_date}</b>\n"
+        f"🍽️ Totale moduli mensa registrati: <b>{sum(r[1] for r in rows)}</b>\n\n"
+        "🏆 <b>Classifica iniziati ed eremiti</b>:\n"
+    )
+
+    if not rows:
+        report += "\nNessun modulo registrato questa settimana."
+        return report
+
+    for username, count in rows:
+        report += f"- 🙏 @{username}: <b>{count}</b> moduli\n"
+
+    return report
+async def send_weekly_mensa_report(context: ContextTypes.DEFAULT_TYPE):
+    start_date, end_date, rows = get_weekly_mensa_report()
+    text = format_weekly_report(start_date, end_date, rows)
+
+    await context.bot.send_message(
+        chat_id=DIRECTION_CHAT_ID,
+        text=text,
+        parse_mode="HTML",
+        message_thread_id=321
+    )
 
 # ---------- main / webhook ----------
 
@@ -683,9 +743,11 @@ def main() -> None:
         .build()
     )
 
-    # Handlers
+    # ---------------- HANDLERS ----------------
+
     application.add_handler(CommandHandler("start", start))
 
+    # --- /generacodice ---
     gen_conv = ConversationHandler(
         entry_points=[CommandHandler("generacodice", generacodice_entry)],
         states={
@@ -698,6 +760,7 @@ def main() -> None:
     application.add_handler(gen_conv)
     application.add_handler(CallbackQueryHandler(generacodice_callback, pattern="^gen_"))
 
+    # --- /controllacodice ---
     check_conv = ConversationHandler(
         entry_points=[CommandHandler("controllacodice", controllacodice_entry)],
         states={
@@ -715,7 +778,7 @@ def main() -> None:
         )
     )
 
-    # --- MODULO MENSA ---
+    # --- /modulomensa ---
     mensa_conv = ConversationHandler(
         entry_points=[CommandHandler("modulomensa", modulomensa_entry)],
         states={
@@ -733,8 +796,15 @@ def main() -> None:
     )
     application.add_handler(mensa_conv)
 
+    # ---------------- JOB SETTIMANALE ----------------
+    # Ogni lunedì alle 00:00
+    application.job_queue.run_daily(
+        send_weekly_mensa_report,
+        time=datetime.time(hour=0, minute=0),
+        days=(1,)  # 0 = lunedì
+    )
 
-    # --- WEBHOOK ---
+    # ---------------- WEBHOOK ----------------
     application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
