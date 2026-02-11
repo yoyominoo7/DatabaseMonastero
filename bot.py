@@ -797,8 +797,14 @@ def main() -> None:
     application.add_handler(mensa_conv)
 
     # ---------------- JOB SETTIMANALE ----------------
+    # Assicuriamoci che il JobQueue esista
+    job_queue = application.job_queue
+
+    if job_queue is None:
+        raise RuntimeError("JobQueue non disponibile. Installa PTB con: pip install 'python-telegram-bot[job-queue]'")
+
     # Ogni lunedì alle 00:00
-    application.job_queue.run_daily(
+    job_queue.run_daily(
         send_weekly_mensa_report,
         time=datetime.time(hour=0, minute=0),
         days=(1,)  # 0 = lunedì
@@ -814,4 +820,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import datetime
     main()
