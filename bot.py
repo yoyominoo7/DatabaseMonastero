@@ -152,7 +152,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "🌊 Benvenuto, eremita.\n"
             "Questa breve guida ti aiuterà nelle tue mansioni all'interno del monastero! Qui sotto sono reportati i comandi a cui hai accesso.\n\n"
             "• /generacodice – <i>Genera un nuovo codice per un fedele</i>\n"
-            "• /controllacodice – <i>Controlla o estingui un codice esistente</i>"
+            "• /controllacodice – <i>Controlla o estingui un codice esistente</i>\n"
             "• /modulomensa –<i>Inizia la registrazione di un modulo mensa</i>\n\n"
             "Inoltre, per aiutarti in tutte le tue mansioni, qui sotto troverai il link per accedere alla guida dell'eremita.\n»https://telegra.ph/Guida-per-gli-Eremiti-02-02",
             parse_mode="HTML"
@@ -165,7 +165,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "Il Monastero riconosce la tua appartenenza.\n\n"
             "Questa breve guida ti aiuterà nelle tue mansioni all'interno del monastero! Qui sotto sono reportati i comandi a cui hai accesso.\n\n"
             "• /generacodice – <i>Genera un nuovo codice per un fedele</i>\n"
-            "• /controllacodice – <i>Controlla o estingui un codice esistente</i>"
+            "• /controllacodice – <i>Controlla o estingui un codice esistente</i>\n"
             "• /modulomensa –<i>Inizia la registrazione di un modulo mensa</i>\n\nPer qualsiasi dubbio rivolgiti alla direzione del Monastero.",
             parse_mode="HTML"
         )
@@ -184,7 +184,7 @@ async def generacodice_entry(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if update.effective_chat.type != "private":
         return ConversationHandler.END
     role = await ensure_authorized(update, context)
-    if role != "hermit":
+    if role not in ["hermit", "initiate"]:
         return ConversationHandler.END
 
     # Genera codice univoco
@@ -358,7 +358,7 @@ async def controllacodice_entry(update: Update, context: ContextTypes.DEFAULT_TY
     if update.effective_chat.type != "private":
         return ConversationHandler.END
     role = await ensure_authorized(update, context)
-    if role != "hermit":
+    if role not in ["hermit", "initiate"]:
         return ConversationHandler.END
 
     msg = await update.message.reply_text(
@@ -374,7 +374,7 @@ async def controllacodice_entry(update: Update, context: ContextTypes.DEFAULT_TY
 async def controllacodice_get_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     role = get_role(user.id)
-    if role != "hermit":
+    if role not in ["hermit", "initiate"]:
         await update.message.reply_text(
             "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
             "⛔ Non sei autorizzato a compiere questo rito.",
@@ -466,7 +466,7 @@ async def controllacodice_callback(update: Update, context: ContextTypes.DEFAULT
 
     user = query.from_user
     role = get_role(user.id)
-    if role != "hermit":
+    if role not in ["hermit", "initiate"]:
         await query.edit_message_text(
             "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
             "⛔ Non sei autorizzato.",
