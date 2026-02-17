@@ -207,7 +207,7 @@ async def generacodice_entry(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def generacodice_get_nick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     role = get_role(update.effective_user.id)
-    if role != "hermit":
+    if role not in ["hermit", "initiate"]:
         await update.message.reply_text(
             "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
             "⛔ Non sei autorizzato a compiere questo rito.",
