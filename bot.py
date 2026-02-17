@@ -3,7 +3,7 @@ import logging
 import os
 import random
 from typing import Optional, Tuple, List
-from datetime import datetime
+import datetime
 import html
 import psycopg
 from psycopg.rows import dict_row
@@ -650,7 +650,7 @@ async def modulomensa_callback(update: Update, context: ContextTypes.DEFAULT_TYP
                 f"• 👤 Fedele: <b>{nick}</b>\n"
                 f"• 🍽️ Quantità: <b>{qty}</b>\n"
                 f"• 🧙‍♂️ Registrato da: <b>@{registratore_username}</b> (ID: {registratore_id})\n"
-                f"• 🕰️ Data: <b>{datetime.now().strftime('%d/%m/%Y %H:%M')}</b>"
+                f"• 🕰️ Data: <b>{datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}</b>"
             ),
             parse_mode="HTML",
             message_thread_id=297
