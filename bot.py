@@ -269,7 +269,7 @@ async def generacodice_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
     user = query.from_user
     role = get_role(user.id)
-    if role != "hermit":
+    if role not in ["hermit", "initiate"]:
         await query.edit_message_text(
             "<b>𝐂𝐔𝐋𝐓𝐎 𝐃𝐈 𝐏𝐎𝐒𝐄𝐈𝐃𝐎𝐍𝐄</b> ⚓️\n\n"
             "⛔ Non sei autorizzato.",
